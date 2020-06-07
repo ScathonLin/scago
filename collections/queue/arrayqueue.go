@@ -10,7 +10,6 @@ const (
 	maxCap       int = math.MaxInt32
 	// Expansion factor
 	resizeThreashold float32 = 0.8
-	emptyString      string  = ""
 )
 
 type arrQueue struct {
@@ -25,8 +24,8 @@ func NewArrayQueue() *arrQueue {
 			0,
 			initCapacity),
 	}
-	stk := &arrQueue{alc: alc}
-	return stk
+	queue := &arrQueue{alc: alc}
+	return queue
 }
 
 // remove and return the first element of queue.

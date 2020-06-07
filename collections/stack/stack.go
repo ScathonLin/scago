@@ -16,67 +16,74 @@ const (
 )
 
 type stack struct {
-	elementData []interface{}
-	size        int
-	cap         int
+	alc *common.ArrayLikeCollection
 }
 
 func (stk *stack) IsEmpty() bool {
-	return stk.size == 0 && len(stk.elementData) == 0
+	return stk.Size() <= 0
 }
 
 func (stk *stack) Size() int {
-	return stk.size
+	return stk.alc.Size()
 }
 func (stk *stack) Cap() int {
-	return stk.cap
+	return stk.alc.Cap()
 }
 
 func (stk *stack) Pop() interface{} {
-	ele := stk.elementData[stk.size-1]
-	stk.elementData = stk.elementData[:stk.size-1]
-	stk.size--
+	alc := stk.alc
+	eles := alc.Elements()
+	ele := (*eles)[alc.Size()-1]
+	*eles = (*eles)[:alc.Size()-1]
+	alc.SetSize(alc.Size() - 1)
 	return ele
 }
 
 func (stk *stack) Peek() interface{} {
-	return stk.elementData[stk.size-1]
+	alc := stk.alc
+	eles := alc.Elements()
+	return (*eles)[alc.Size()-1]
 }
 
 func (stk *stack) Push(ele interface{}) {
-	if stk.size >= maxCap {
+	alc := stk.alc
+	if alc.Size() >= maxCap {
 		panic("no more space can allocate for the new ele..the size of stack have reached the max capacity.")
 	}
-	stk.elementData[stk.size] = ele
-	stk.size++
-	if float32(stk.size)/float32(stk.cap) >= resizeThreashold {
+	eles := alc.Elements()
+	(*eles)[alc.Size()] = ele
+	alc.SetSize(alc.Size() + 1)
+	if float32(alc.Size())/float32(alc.Cap()) >= resizeThreashold {
 		stk.resize()
 	}
 }
 
 func (stk *stack) resize() {
 	// allocate new space.
-	newCap := stk.cap << 1
+	alc := stk.alc
+	newCap := alc.Cap() << 1
 	if newCap > maxCap {
 		newCap = maxCap
 	}
 	newspace := make([]interface{}, newCap)
-	originElements := stk.elementData
+	eles := alc.Elements()
+	originElements := alc.Elements()
 	// copy origin data to new space.
-	for i := 0; i < stk.size; i++ {
-		newspace[i] = originElements[i]
+	for i := 0; i < alc.Size(); i++ {
+		newspace[i] = (*originElements)[i]
 	}
-	stk.elementData = newspace
-	stk.cap = newCap
+	*eles = newspace
+	alc.SetCap(newCap)
 }
 
 func (stk *stack) Foreach(foreach func(interface{})) {
 	if stk.IsEmpty() {
 		return
 	}
-	eles := stk.elementData
-	for i := 0; i < stk.size; i++ {
-		foreach(eles[i])
+	alc := stk.alc
+	eles := alc.Elements()
+	for i := 0; i < alc.Size(); i++ {
+		foreach((*eles)[i])
 	}
 }
 
@@ -84,22 +91,22 @@ func (stk *stack) Map(mapFunc func(interface{}) interface{}) []interface{} {
 	if stk.IsEmpty() {
 		return make([]interface{}, 0)
 	}
-	eles := stk.elementData
-	results := make([]interface{}, stk.size)
-	for i := 0; i < stk.size; i++ {
-		results[i] = mapFunc(eles[i])
+	eles := stk.alc.Elements()
+	results := make([]interface{}, stk.alc.Size())
+	for i := 0; i < stk.alc.Size(); i++ {
+		results[i] = mapFunc((*eles)[i])
 	}
 	return results
 }
 
 func (stk *stack) ToString() string {
-	if stk.size <= 0 {
+	if stk.alc.Size() <= 0 {
 		return emptyString
 	}
 	// use high performance way to build string.
 	var builder strings.Builder
 	for i := 0; i < stk.Size(); i++ {
-		builder.WriteString(fmt.Sprintf("%v", stk.elementData[i]))
+		builder.WriteString(fmt.Sprintf("%v", (*stk.alc.Elements())[i]))
 		if i != stk.Size()-1 {
 			builder.WriteString(",")
 		}
@@ -109,10 +116,16 @@ func (stk *stack) ToString() string {
 
 // NewStack to make a new stack with defaultcapacity.
 func NewStack() *stack {
-	stk := &stack{size: 0, elementData: make([]interface{}, initCapacity), cap: initCapacity}
+	alc := &common.ArrayLikeCollection{
+		BaseCollection: common.NewBaseCollection(
+			make([]interface{}, initCapacity),
+			0,
+			initCapacity),
+	}
+	stk := &stack{alc: alc}
 	return stk
 }
 
 func (stk *stack) Iterator() common.Iterator {
-	return common.NewBaseIterator(stk.Size(), stk.elementData)
+	return stk.alc.Iterator()
 }
