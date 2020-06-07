@@ -1,10 +1,8 @@
 package queue
 
 import (
-	"fmt"
 	"math"
 	"scago/collections/common"
-	"strings"
 )
 
 const (
@@ -36,9 +34,9 @@ func (queue *arrQueue) PollFirst() interface{} {
 	queue.preCheck()
 	alc := queue.alc
 	alc.SetSize(alc.Size() - 1)
-	eles := *alc.Elements()
-	ele := eles[0]
-	alc.SetElements(eles[1:])
+	eles := alc.Elements()
+	ele := (*eles)[0]
+	*eles = (*eles)[1:]
 	return ele
 }
 
@@ -67,12 +65,11 @@ func (queue *arrQueue) PeekLast() interface{} {
 // insert element to the head of queue.
 func (queue *arrQueue) OfferFirst(ele interface{}) interface{} {
 	alc := queue.alc
-	if float32(alc.Size())/float32(alc.GetCap()) >= resizeThreashold {
+	if float32(alc.Size())/float32(alc.Cap()) >= resizeThreashold {
 		queue.resize()
 	}
-	eles := *alc.Elements()
-	eles = append([]interface{}{ele}, eles...)
-	alc.SetElements(eles)
+	eles := alc.Elements()
+	*eles = append([]interface{}{ele}, *eles...)
 	alc.SetSize(alc.Size() + 1)
 	return ele
 }
@@ -80,7 +77,7 @@ func (queue *arrQueue) OfferFirst(ele interface{}) interface{} {
 // insert element to the tail of queue.
 func (queue *arrQueue) OfferLast(ele interface{}) interface{} {
 	alc := queue.alc
-	if float32(alc.Size())/float32(alc.GetCap()) >= resizeThreashold {
+	if float32(alc.Size())/float32(alc.Cap()) >= resizeThreashold {
 		queue.resize()
 	}
 	(*alc.Elements())[alc.Size()] = ele
@@ -102,7 +99,7 @@ func (queue *arrQueue) Size() int {
 }
 
 func (queue *arrQueue) Cap() int {
-	return queue.alc.GetCap()
+	return queue.alc.Cap()
 }
 
 func (queue *arrQueue) IsEmpty() bool {
@@ -116,26 +113,18 @@ func (queue *arrQueue) preCheck() {
 }
 
 func (queue *arrQueue) resize() {
-	newCap := queue.alc.GetCap() << 1
+	newCap := queue.alc.Cap() << 1
 	if newCap > maxCap {
 		panic("exceed the max capacity of the queue,cannot finish the capacity expanding...")
 	}
 	eles := *queue.alc.Elements()
-	eles = append(eles, make([]interface{}, newCap-queue.alc.GetCap(), newCap-queue.alc.GetCap())...)
+	eles = append(eles, make([]interface{}, newCap-queue.alc.Cap(), newCap-queue.alc.Cap())...)
 	queue.alc.SetCap(newCap)
 }
 
 func (queue *arrQueue) ToString() string {
-	if queue.alc.Size() <= 0 {
-		return emptyString
-	}
-	// use high performance way to build string.
-	var builder strings.Builder
-	for i := 0; i < queue.Size(); i++ {
-		builder.WriteString(fmt.Sprintf("%v", (*queue.alc.Elements())[i]))
-		if i != queue.Size()-1 {
-			builder.WriteString(",")
-		}
-	}
-	return builder.String()
+	return queue.alc.ToString()
+}
+func (queue *arrQueue) Iterator() common.Iterator {
+	return queue.alc.Iterator()
 }

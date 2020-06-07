@@ -14,11 +14,17 @@ const (
 	emptyString = ""
 )
 
+//===============BaseCollection Start======================
 type BaseCollection struct {
 	Collection
-	elementData []interface{}
+	// using pointer to advoid some operation are invalid to the elements array.
+	elementData *[]interface{}
 	size        int
 	cap         int
+}
+
+func (bc *BaseCollection) IsEmpty() bool {
+	return bc.size == 0 && len(*bc.elementData) == 0
 }
 
 func (bc *BaseCollection) SetSize(newSize int) {
@@ -33,24 +39,12 @@ func (bc *BaseCollection) Size() int {
 	return bc.size
 }
 
-func (bc *BaseCollection) GetCap() int {
+func (bc *BaseCollection) Cap() int {
 	return bc.cap
 }
 
 func (bc *BaseCollection) Elements() *[]interface{} {
-	return &bc.elementData
-}
-
-func (bc *BaseCollection) SetElements(elements []interface{}) {
-	bc.elementData = elements
-}
-
-func NewBaseCollection(elements []interface{}, size, cap int) *BaseCollection {
-	return &BaseCollection{
-		elementData: elements,
-		size:        size,
-		cap:         cap,
-	}
+	return bc.elementData
 }
 
 func (bc *BaseCollection) ToString() string {
@@ -60,13 +54,27 @@ func (bc *BaseCollection) ToString() string {
 	// use high performance way to build string.
 	var builder strings.Builder
 	for i := 0; i < bc.size; i++ {
-		builder.WriteString(fmt.Sprintf("%v", bc.elementData[i]))
+		builder.WriteString(fmt.Sprintf("%v", (*bc.elementData)[i]))
 		if i != bc.size-1 {
 			builder.WriteString(",")
 		}
 	}
 	return builder.String()
 }
+
+func (bc *BaseCollection) Iterator() Iterator {
+	return NewBaseIterator(bc.Size(), *bc.Elements())
+}
+
+func NewBaseCollection(elements []interface{}, size, cap int) *BaseCollection {
+	return &BaseCollection{
+		elementData: &elements,
+		size:        size,
+		cap:         cap,
+	}
+}
+
+//===============BaseCollection End======================
 
 type ArrayLikeCollection struct {
 	*BaseCollection
@@ -92,14 +100,6 @@ type BaseIterator struct {
 	elementData []interface{}
 }
 
-func NewBaseIterator(size int, elementData []interface{}) *BaseIterator {
-	return &BaseIterator{
-		cursor:      0,
-		size:        size,
-		elementData: elementData,
-	}
-}
-
 func (iterator *BaseIterator) HasNext() bool {
 	return iterator.cursor >= 0 && iterator.cursor < iterator.size
 }
@@ -116,5 +116,13 @@ func (iterator *BaseIterator) preCheck() {
 	}
 	if iterator.cursor >= iterator.size {
 		panic("cursor of iterator has exceed the length of the collection.")
+	}
+}
+
+func NewBaseIterator(size int, elementData []interface{}) *BaseIterator {
+	return &BaseIterator{
+		cursor:      0,
+		size:        size,
+		elementData: elementData,
 	}
 }

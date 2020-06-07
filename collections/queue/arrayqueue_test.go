@@ -2,6 +2,7 @@ package queue
 
 import (
 	"fmt"
+	"scago/collections/common"
 	"testing"
 )
 
@@ -32,6 +33,16 @@ func TestArrQueue_OfferFirst(t *testing.T) {
 		q.OfferLast(i)
 	}
 	fmt.Printf("Size:%d,cap:%d,content:%v\n", q.Size(), q.Cap(), q.ToString())
+	iter := q.Iterator()
+	for iter.HasNext() {
+		fmt.Printf("%v\n", iter.Next())
+	}
+	var c common.Collection = q
+	println(c.IsEmpty())
+	iter = c.Iterator()
+	for iter.HasNext() {
+		fmt.Printf("%v\n", iter.Next())
+	}
 }
 
 func Test(t *testing.T) {
