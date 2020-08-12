@@ -19,7 +19,7 @@ type arrQueue struct {
 // NewArrayQueue to make a new stack with defaultcapacity.
 func NewArrayQueue() *arrQueue {
 	alc := &common.ArrayLikeCollection{
-		BaseCollection: common.NewBaseCollection(
+		ArrayLikeBaseCollection: common.NewBaseCollection(
 			make([]interface{}, initCapacity),
 			0,
 			initCapacity),

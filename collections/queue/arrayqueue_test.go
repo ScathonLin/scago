@@ -11,7 +11,7 @@ func TestNewArrayQueue(t *testing.T) {
 	fmt.Println(queue.IsEmpty())
 }
 
-func TestArrQueue_OfferFirst(t *testing.T) {
+func TestArrQueueOfferFirst(t *testing.T) {
 	q := NewArrayQueue()
 	fmt.Printf("Size:%d,cap:%d,content:%v\n", q.Size(), q.Cap(), q.ToString())
 	for i := 0; i < 5; i++ {

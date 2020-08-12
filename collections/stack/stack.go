@@ -117,7 +117,7 @@ func (stk *stack) ToString() string {
 // NewStack to make a new stack with defaultcapacity.
 func NewStack() *stack {
 	alc := &common.ArrayLikeCollection{
-		BaseCollection: common.NewBaseCollection(
+		ArrayLikeBaseCollection: common.NewBaseCollection(
 			make([]interface{}, initCapacity),
 			0,
 			initCapacity),

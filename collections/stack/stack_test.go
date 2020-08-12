@@ -44,7 +44,6 @@ func TestResize(t *testing.T) {
 	fmt.Println("stack size is : " + strconv.Itoa(stack.Size()))
 	fmt.Println("stack cap is : " + strconv.Itoa(stack.Cap()))
 	fmt.Println(stack.ToString())
-
 	fmt.Println("===========================")
 
 	fmt.Printf("peek is : %v\n", stack.Peek())

@@ -7,47 +7,48 @@ import (
 
 type Collection interface {
 	IsEmpty() bool
+	Size() int
 	Iterator() Iterator
+	ToString() string
 }
 
 const (
 	emptyString = ""
 )
 
-//===============BaseCollection Start======================
-type BaseCollection struct {
-	Collection
+//===============ArrayLikeBaseCollection Start======================
+type ArrayLikeBaseCollection struct {
 	// using pointer to advoid some operation are invalid to the elements array.
 	elementData *[]interface{}
 	size        int
 	cap         int
 }
 
-func (bc *BaseCollection) IsEmpty() bool {
+func (bc *ArrayLikeBaseCollection) IsEmpty() bool {
 	return bc.size == 0 && len(*bc.elementData) == 0
 }
 
-func (bc *BaseCollection) SetSize(newSize int) {
+func (bc *ArrayLikeBaseCollection) SetSize(newSize int) {
 	bc.size = newSize
 }
 
-func (bc *BaseCollection) SetCap(newCap int) {
+func (bc *ArrayLikeBaseCollection) SetCap(newCap int) {
 	bc.cap = newCap
 }
 
-func (bc *BaseCollection) Size() int {
+func (bc *ArrayLikeBaseCollection) Size() int {
 	return bc.size
 }
 
-func (bc *BaseCollection) Cap() int {
+func (bc *ArrayLikeBaseCollection) Cap() int {
 	return bc.cap
 }
 
-func (bc *BaseCollection) Elements() *[]interface{} {
+func (bc *ArrayLikeBaseCollection) Elements() *[]interface{} {
 	return bc.elementData
 }
 
-func (bc *BaseCollection) ToString() string {
+func (bc *ArrayLikeBaseCollection) ToString() string {
 	if bc.size <= 0 {
 		return emptyString
 	}
@@ -62,22 +63,22 @@ func (bc *BaseCollection) ToString() string {
 	return builder.String()
 }
 
-func (bc *BaseCollection) Iterator() Iterator {
+func (bc *ArrayLikeBaseCollection) Iterator() Iterator {
 	return NewBaseIterator(bc.Size(), *bc.Elements())
 }
 
-func NewBaseCollection(elements []interface{}, size, cap int) *BaseCollection {
-	return &BaseCollection{
+func NewBaseCollection(elements []interface{}, size, cap int) *ArrayLikeBaseCollection {
+	return &ArrayLikeBaseCollection{
 		elementData: &elements,
 		size:        size,
 		cap:         cap,
 	}
 }
 
-//===============BaseCollection End======================
+//===============ArrayLikeBaseCollection End======================
 
 type ArrayLikeCollection struct {
-	*BaseCollection
+	*ArrayLikeBaseCollection
 }
 
 type LinkedListLikeCollection struct {
