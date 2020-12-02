@@ -15,7 +15,7 @@ import (
 // author: linhuadong(scathonlin)
 // date: 2020-12-2 21:44
 
-func UncompressZipFile(zipFilePath, uncompressDir string) (*os.File, error) {
+func UncompressZipFile(zipFilePath, uncompressDir string, maxEntries, limitSize int) (*os.File, error) {
 	zipFilePath = path.Clean(zipFilePath)
 	uncompressDir = path.Clean(uncompressDir)
 	zipFile, err := os.Open(zipFilePath)
@@ -29,9 +29,14 @@ func UncompressZipFile(zipFilePath, uncompressDir string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	entryCounter, totalSize := 0, int64(0)
 	for _, zipEntry := range zipReader.File {
 		if zipEntry == nil {
 			continue
+		}
+		entryCounter++
+		if entryCounter > maxEntries {
+			return nil, errors.New("too many entries in zip file, maybe there is a zip bomb attacks")
 		}
 		entryFullPath := path.Clean(path.Join(uncompressDir, zipEntry.Name))
 		if strings.LastIndex(entryFullPath, uncompressDir) != 0 {
@@ -52,7 +57,10 @@ func UncompressZipFile(zipFilePath, uncompressDir string) (*os.File, error) {
 			if err != nil {
 				return nil, err
 			}
-			transferReadCloserToFile(entryFile, entryReader)
+			totalSize += transferReadCloserToFile(entryFile, entryReader)
+			if totalSize > int64(limitSize) {
+				return nil, errors.New("the zip file may have high compression radio, it seems like zip bomb attacks")
+			}
 		}
 	}
 	return os.Open(uncompressDir)
@@ -120,10 +128,12 @@ func transferReaderToFile(dstFile *os.File, reader io.Reader) {
 		panic("failed to transfer reader to file : " + dstFile.Name())
 	}
 }
-func transferReadCloserToFile(dstFile *os.File, reader io.ReadCloser) {
+func transferReadCloserToFile(dstFile *os.File, reader io.ReadCloser) (transferLen int64) {
 	defer func() { _ = dstFile.Close() }()
 	defer func() { _ = reader.Close() }()
-	if _, err := io.Copy(dstFile, reader); err != nil {
+	var err error
+	if transferLen, err = io.Copy(dstFile, reader); err != nil {
 		panic("failed to transfer reader to file : " + dstFile.Name())
 	}
+	return transferLen
 }
