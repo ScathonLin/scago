@@ -2,6 +2,7 @@ package archive
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"compress/gzip"
 	"errors"
 	"io"
@@ -14,6 +15,50 @@ import (
 // author: linhuadong(scathonlin)
 // date: 2020-12-2 21:44
 
+func UncompressZipFile(zipFilePath, uncompressDir string) (*os.File, error) {
+	zipFilePath = path.Clean(zipFilePath)
+	uncompressDir = path.Clean(uncompressDir)
+	zipFile, err := os.Open(zipFilePath)
+	defer func() { _ = zipFile.Close() }()
+	if err != nil {
+		return nil, err
+	}
+	//zipReader, err := zip.NewReader(zipFile)
+	zipReader, err := zip.OpenReader(zipFilePath)
+	defer func() { _ = zipReader.Close() }()
+	if err != nil {
+		return nil, err
+	}
+	for _, zipEntry := range zipReader.File {
+		if zipEntry == nil {
+			continue
+		}
+		entryFullPath := path.Clean(path.Join(uncompressDir, zipEntry.Name))
+		if strings.LastIndex(entryFullPath, uncompressDir) != 0 {
+			return nil, errors.New("your zip file may can cause crossing dir attacks,system denied to process it")
+		}
+		fileInfo := zipEntry.FileInfo()
+		if fileInfo.IsDir() {
+			mkdirAll(entryFullPath, os.ModePerm)
+		} else {
+			// create file dir.
+			entryFileDir := entryFullPath[:strings.LastIndex(entryFullPath, string(os.PathSeparator))]
+			mkdirAll(entryFileDir, os.ModePerm)
+			entryFile, err := os.Create(entryFullPath)
+			if err != nil {
+				return nil, err
+			}
+			entryReader, err := zipEntry.Open()
+			if err != nil {
+				return nil, err
+			}
+			transferReadCloserToFile(entryFile, entryReader)
+		}
+	}
+	return os.Open(uncompressDir)
+}
+
+// UncompressTarGzFile can uncompress the *.tar.gz file to specified dir.
 func UncompressTarGzFile(tarGzFilePath, uncompressDir string) (*os.File, error) {
 	// get the canonical path.
 	tarGzFilePath = path.Clean(tarGzFilePath)
@@ -21,12 +66,12 @@ func UncompressTarGzFile(tarGzFilePath, uncompressDir string) (*os.File, error) 
 	targzFile, err := os.Open(tarGzFilePath)
 	defer func() { _ = targzFile.Close() }()
 	if err != nil {
-		return nil, errors.New("failed to open targz file with " + tarGzFilePath)
+		return nil, err
 	}
 	gzreader, err := gzip.NewReader(targzFile)
 	defer func() { _ = gzreader.Close() }()
 	if err != nil {
-		return nil, errors.New("failed to get gzip reader with file: " + tarGzFilePath)
+		return nil, err
 	}
 	tarReader := tar.NewReader(gzreader)
 	for entry, err := tarReader.Next(); err != io.EOF; entry, err = tarReader.Next() {
@@ -71,6 +116,13 @@ func mkdirAll(dir string, mode os.FileMode) {
 
 func transferReaderToFile(dstFile *os.File, reader io.Reader) {
 	defer func() { _ = dstFile.Close() }()
+	if _, err := io.Copy(dstFile, reader); err != nil {
+		panic("failed to transfer reader to file : " + dstFile.Name())
+	}
+}
+func transferReadCloserToFile(dstFile *os.File, reader io.ReadCloser) {
+	defer func() { _ = dstFile.Close() }()
+	defer func() { _ = reader.Close() }()
 	if _, err := io.Copy(dstFile, reader); err != nil {
 		panic("failed to transfer reader to file : " + dstFile.Name())
 	}
