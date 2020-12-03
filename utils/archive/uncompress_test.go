@@ -2,26 +2,44 @@ package archive
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
-const testTarGzFile string = "/Users/scathon/projects/golang/tmp/test.tar.gz"
-const testTarGzUnComPath string = "/Users/scathon/projects/golang/tmp/untargz"
-const testZipFile string = "/Users/scathon/projects/golang/tmp/test.zip"
-const testZipUnComPath string = "/Users/scathon/projects/golang/tmp/unzip"
+const (
+	testTarGzFile      string = "/Users/scathon/projects/golang/tmp/test.tar.gz"
+	testTarGzUnComPath string = "/Users/scathon/projects/golang/tmp/untargz"
+	testZipFile        string = "/Users/scathon/projects/golang/tmp/test.zip"
+	testZipUnComPath   string = "/Users/scathon/projects/golang/tmp/unzip"
+	testGzipFile       string = "/Users/scathon/projects/golang/tmp/gzip_input.txt.gz"
+	testUnGipFilePath  string = "/Users/scathon/projects/golang/tmp/gunzip.txt"
+)
 
 func TestUncompressTarGzFile(t *testing.T) {
-	_, err := UncompressTarGzFile(testTarGzFile, testTarGzUnComPath)
+	err := UncompressTarGzFile(testTarGzFile, testTarGzUnComPath)
 	if err != nil {
-		fmt.Errorf("Failed to uncompress tar.gz file\n")
+		fmt.Println(err.Error())
+		return
 	}
 	fmt.Println("Done!")
 }
 
 func TestUncompressZipFile(t *testing.T) {
-	_, err := UncompressZipFile(testZipFile, testZipUnComPath)
+	err := UncompressZipFile(testZipFile, testZipUnComPath, 10000, 10<<20)
 	if err != nil {
-		fmt.Errorf("Failed to uncompress .zip file\n")
+		fmt.Println(err.Error())
+		return
 	}
+	fmt.Println("Done!")
+}
+
+func TestUncompressGzipFile(t *testing.T) {
+	err := UncompressGzipFile(testGzipFile, testUnGipFilePath)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	file, _ := os.Open(testUnGipFilePath)
+	defer func() { _ = file.Close() }()
 	fmt.Println("Done!")
 }

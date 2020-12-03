@@ -1,3 +1,6 @@
+// description: tools to compress or uncompress archived file such as gzip, tar, zip.
+// author: linhuadong(scathonlin)
+// date: 2020-12-2 21:44
 package archive
 
 import (
@@ -11,23 +14,53 @@ import (
 	"strings"
 )
 
-// description: tools to compress or uncompress archived file such as gzip, tar, zip.
-// author: linhuadong(scathonlin)
-// date: 2020-12-2 21:44
+//UncompressGzipFile can be used to uncompress gzip file with given gzip file path and target uncompress file.
+func UncompressGzipFile(gzipFilePath, uncompressFilePath string) error {
+	gzipFilePath = path.Clean(gzipFilePath)
+	uncompressFilePath = path.Clean(uncompressFilePath)
+	gzipFile, err := os.Open(gzipFilePath)
+	defer func() { _ = gzipFile.Close() }()
+	if err != nil {
+		return err
+	}
+	gzipReader, err := gzip.NewReader(gzipFile)
+	defer func() { _ = gzipReader.Close() }()
+	if err != nil {
+		return err
+	}
+	bytes, buf := make([]byte, 0), make([]byte, 1<<10)
+	uncompressFile, err := os.Create(uncompressFilePath)
+	if err != nil {
+		return err
+	}
+	for {
+		readlen, err := gzipReader.Read(buf)
+		if err == io.EOF {
+			_, _ = uncompressFile.Write(buf[:readlen])
+			break
+		}
+		bytes = append(bytes, buf[:readlen]...)
+		_, _ = uncompressFile.Write(bytes)
+	}
+	return nil
+}
 
-func UncompressZipFile(zipFilePath, uncompressDir string, maxEntries, limitSize int) (*os.File, error) {
+//UncompressZipFile can be used to uncompress zip file.
+// 1. maxEntries is be used to symbol the max entry num in the zip file which is counted during unzip procedure,
+// 2. limitSize is be used to symbol the total size of unzip file which is calculated during unzip procedure.
+// the purpose of limitSize is to protect the app from high compression radio file and zip bomb attacks.
+func UncompressZipFile(zipFilePath, uncompressDir string, maxEntries, limitSize int) error {
 	zipFilePath = path.Clean(zipFilePath)
 	uncompressDir = path.Clean(uncompressDir)
 	zipFile, err := os.Open(zipFilePath)
 	defer func() { _ = zipFile.Close() }()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	//zipReader, err := zip.NewReader(zipFile)
 	zipReader, err := zip.OpenReader(zipFilePath)
 	defer func() { _ = zipReader.Close() }()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	entryCounter, totalSize := 0, int64(0)
 	for _, zipEntry := range zipReader.File {
@@ -36,11 +69,11 @@ func UncompressZipFile(zipFilePath, uncompressDir string, maxEntries, limitSize 
 		}
 		entryCounter++
 		if entryCounter > maxEntries {
-			return nil, errors.New("too many entries in zip file, maybe there is a zip bomb attacks")
+			return errors.New("too many entries in zip file, maybe there is a zip bomb attacks")
 		}
 		entryFullPath := path.Clean(path.Join(uncompressDir, zipEntry.Name))
 		if strings.LastIndex(entryFullPath, uncompressDir) != 0 {
-			return nil, errors.New("your zip file may can cause crossing dir attacks,system denied to process it")
+			return errors.New("your zip file may can cause crossing dir attacks,system denied to process it")
 		}
 		fileInfo := zipEntry.FileInfo()
 		if fileInfo.IsDir() {
@@ -51,35 +84,35 @@ func UncompressZipFile(zipFilePath, uncompressDir string, maxEntries, limitSize 
 			mkdirAll(entryFileDir, os.ModePerm)
 			entryFile, err := os.Create(entryFullPath)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			entryReader, err := zipEntry.Open()
 			if err != nil {
-				return nil, err
+				return err
 			}
 			totalSize += transferReadCloserToFile(entryFile, entryReader)
 			if totalSize > int64(limitSize) {
-				return nil, errors.New("the zip file may have high compression radio, it seems like zip bomb attacks")
+				return errors.New("the zip file may have high compression radio, it seems like zip bomb attacks")
 			}
 		}
 	}
-	return os.Open(uncompressDir)
+	return nil
 }
 
 // UncompressTarGzFile can uncompress the *.tar.gz file to specified dir.
-func UncompressTarGzFile(tarGzFilePath, uncompressDir string) (*os.File, error) {
+func UncompressTarGzFile(tarGzFilePath, uncompressDir string) error {
 	// get the canonical path.
 	tarGzFilePath = path.Clean(tarGzFilePath)
 	uncompressDir = path.Clean(uncompressDir)
 	targzFile, err := os.Open(tarGzFilePath)
 	defer func() { _ = targzFile.Close() }()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	gzreader, err := gzip.NewReader(targzFile)
 	defer func() { _ = gzreader.Close() }()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	tarReader := tar.NewReader(gzreader)
 	for entry, err := tarReader.Next(); err != io.EOF; entry, err = tarReader.Next() {
@@ -91,7 +124,7 @@ func UncompressTarGzFile(tarGzFilePath, uncompressDir string) (*os.File, error) 
 		// do check to avoid to be attacked by crossing dir attacks.
 		if strings.LastIndex(entryFullPath, uncompressDir) != 0 {
 			// attention!! there is a risk of crossing dir attack!
-			return nil, errors.New("the targz file is dangerous! system denied to process it")
+			return errors.New("the targz file is dangerous! system denied to process it")
 		}
 		if entry.Typeflag == tar.TypeDir {
 			// current entry is a dir.
@@ -108,7 +141,7 @@ func UncompressTarGzFile(tarGzFilePath, uncompressDir string) (*os.File, error) 
 			transferReaderToFile(entryFile, tarReader)
 		}
 	}
-	return os.Open(uncompressDir)
+	return nil
 }
 
 func mkdirAll(dir string, mode os.FileMode) {
@@ -120,6 +153,18 @@ func mkdirAll(dir string, mode os.FileMode) {
 	if err := os.MkdirAll(dir, mode); err != nil {
 		panic("failed to mkdir dir: " + dir + " with error : " + err.Error())
 	}
+}
+
+func fileExists(filePath string) bool {
+	filePath = path.Clean(filePath)
+	stat, err := os.Lstat(filePath)
+	return (err == nil || os.IsExist(err)) && !stat.IsDir()
+}
+
+func dirExists(dirPath string) bool {
+	dirPath = path.Clean(dirPath)
+	lstat, err := os.Lstat(dirPath)
+	return (err == nil || os.IsExist(err)) && lstat.IsDir()
 }
 
 func transferReaderToFile(dstFile *os.File, reader io.Reader) {
