@@ -48,7 +48,7 @@ func UncompressGzipFile(gzipFilePath, uncompressFilePath string) error {
 //UncompressZipFile can be used to uncompress zip file.
 // 1. maxEntries is be used to symbol the max entry num in the zip file which is counted during unzip procedure,
 // 2. limitSize is be used to symbol the total size of unzip file which is calculated during unzip procedure.
-// the purpose of limitSize is to protect the app from high compression radio file and zip bomb attacks.
+// the purpose of limitSize and maxEntries is to protect the app from high compression radio file and zip bomb attacks.
 func UncompressZipFile(zipFilePath, uncompressDir string, maxEntries, limitSize int) error {
 	zipFilePath = path.Clean(zipFilePath)
 	uncompressDir = path.Clean(uncompressDir)
