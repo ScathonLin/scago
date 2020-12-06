@@ -14,8 +14,8 @@ import (
 	"strings"
 )
 
-//UncompressGzipFile can be used to uncompress gzip file with given gzip file path and target uncompress file.
-func UncompressGzipFile(gzipFilePath, uncompressFilePath string) error {
+//GUnzip can be used to uncompress gzip file with given gzip file path and target uncompress file.
+func GUnzip(gzipFilePath, uncompressFilePath string) error {
 	gzipFilePath = path.Clean(gzipFilePath)
 	uncompressFilePath = path.Clean(uncompressFilePath)
 	gzipFile, err := os.Open(gzipFilePath)
@@ -45,11 +45,11 @@ func UncompressGzipFile(gzipFilePath, uncompressFilePath string) error {
 	return nil
 }
 
-//UncompressZipFile can be used to uncompress zip file.
+//UnZip can be used to uncompress zip file.
 // 1. maxEntries is be used to symbol the max entry num in the zip file which is counted during unzip procedure,
 // 2. limitSize is be used to symbol the total size of unzip file which is calculated during unzip procedure.
 // the purpose of limitSize and maxEntries is to protect the program from high compression radio file and zip bomb attacks.
-func UncompressZipFile(zipFilePath, uncompressDir string, maxEntries, limitSize int) error {
+func UnZip(zipFilePath, uncompressDir string, maxEntries, limitSize int) error {
 	zipFilePath = path.Clean(zipFilePath)
 	uncompressDir = path.Clean(uncompressDir)
 	zipFile, err := os.Open(zipFilePath)
@@ -99,8 +99,8 @@ func UncompressZipFile(zipFilePath, uncompressDir string, maxEntries, limitSize 
 	return nil
 }
 
-// UncompressTarGzFile can uncompress the *.tar.gz file to specified dir.
-func UncompressTarGzFile(tarGzFilePath, uncompressDir string) error {
+// UnTarGZ can uncompress the *.tar.gz file to specified dir.
+func UnTarGZ(tarGzFilePath, uncompressDir string) error {
 	// get the canonical path.
 	tarGzFilePath = path.Clean(tarGzFilePath)
 	uncompressDir = path.Clean(uncompressDir)

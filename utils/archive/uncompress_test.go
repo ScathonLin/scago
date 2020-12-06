@@ -16,7 +16,7 @@ const (
 )
 
 func TestUncompressTarGzFile(t *testing.T) {
-	err := UncompressTarGzFile(testTarGzFile, testTarGzUnComPath)
+	err := UnTarGZ(testTarGzFile, testTarGzUnComPath)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -25,7 +25,7 @@ func TestUncompressTarGzFile(t *testing.T) {
 }
 
 func TestUncompressZipFile(t *testing.T) {
-	err := UncompressZipFile(testZipFile, testZipUnComPath, 10000, 10<<20)
+	err := UnZip(testZipFile, testZipUnComPath, 10000, 10<<20)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -34,7 +34,7 @@ func TestUncompressZipFile(t *testing.T) {
 }
 
 func TestUncompressGzipFile(t *testing.T) {
-	err := UncompressGzipFile(testGzipFile, testUnGipFilePath)
+	err := GUnzip(testGzipFile, testUnGipFilePath)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
