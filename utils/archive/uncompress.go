@@ -155,18 +155,6 @@ func mkdirAll(dir string, mode os.FileMode) {
 	}
 }
 
-func fileExists(filePath string) bool {
-	filePath = path.Clean(filePath)
-	stat, err := os.Lstat(filePath)
-	return (err == nil || os.IsExist(err)) && !stat.IsDir()
-}
-
-func dirExists(dirPath string) bool {
-	dirPath = path.Clean(dirPath)
-	lstat, err := os.Lstat(dirPath)
-	return (err == nil || os.IsExist(err)) && lstat.IsDir()
-}
-
 func transferReaderToFile(dstFile *os.File, reader io.Reader) {
 	defer func() { _ = dstFile.Close() }()
 	if _, err := io.Copy(dstFile, reader); err != nil {
