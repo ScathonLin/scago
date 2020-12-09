@@ -21,3 +21,18 @@ func TestZipFiles(t *testing.T) {
 	}
 	fmt.Println("Done")
 }
+
+func TestTar(t *testing.T) {
+	filePaths := []string{
+		"D:\\devtools\\GO\\GOPATH\\src\\scago\\utils\\archive\\compress.go",
+		"D:\\devtools\\GO\\GOPATH\\src\\scago\\utils\\archive\\compress_test.go",
+		"D:\\devtools\\GO\\GOPATH\\src\\scago\\utils\\archive\\uncompress.go",
+		"D:\\devtools\\GO\\GOPATH\\src\\scago\\utils\\archive\\uncompress_test.go",
+	}
+	tarFilePath := "D:\\devtools\\GO\\GOPATH\\src\\scago\\utils\\archive\\test.tar"
+	if e := TarFiles(filePaths, tarFilePath); e != nil {
+		fmt.Println(e.Error())
+		return
+	}
+	fmt.Println("Done!")
+}
