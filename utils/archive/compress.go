@@ -12,8 +12,6 @@ import (
 	"strings"
 )
 
-const emptyRtn string = ""
-
 func ZipFiles(filePaths []string, zipFilePath string) error {
 	if filePaths == nil || len(filePaths) == 0 {
 		return errors.New("no file to zip")
@@ -48,6 +46,46 @@ func ZipFiles(filePaths []string, zipFilePath string) error {
 }
 
 func ZipDir(dirToZip, zipFilePath string) error {
+	if !file.IsSafeFilePath(dirToZip) || !file.IsSafeFilePath(zipFilePath) {
+		return errors.New("file or dir path params are illegal")
+	}
+	allFiles, e := file.ListFiles(dirToZip, true)
+	if e != nil {
+		return e
+	}
+	zipFile, e := os.Create(zipFilePath)
+	defer func() { _ = zipFile.Close() }()
+	if e != nil {
+		return nil
+	}
+	zipWriter := zip.NewWriter(zipFile)
+	defer func() { _ = zipWriter.Close() }()
+	for _, fileItem := range allFiles {
+		fileInfo, e := os.Stat(fileItem)
+		if e != nil {
+			return e
+		}
+		if fileInfo.IsDir() {
+			continue
+		}
+		fileHeader, e := zip.FileInfoHeader(fileInfo)
+		if e != nil {
+			return e
+		}
+		fileHeader.Name = fileItem[len(dirToZip)+1:]
+		entryWriter, e := zipWriter.CreateHeader(fileHeader)
+		if e != nil {
+			return e
+		}
+		entryFile, e := os.Open(fileItem)
+		if e != nil {
+			return e
+		}
+		e = transformFileTo(entryWriter, entryFile)
+		if e != nil {
+			return e
+		}
+	}
 	return nil
 }
 
