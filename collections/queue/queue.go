@@ -1,10 +1,7 @@
 package queue
 
-import "scago/collections/common"
-
 // Queue defines the actions of queuq.
 type Queue interface {
-	common.Collection
 	// remove and return the first element of queue.
 	PollFirst() interface{}
 	// remove and return the last element of queue.
