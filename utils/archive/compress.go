@@ -3,10 +3,12 @@
 package archive
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"errors"
 	"io"
 	"os"
+	"scago/utils/file"
 	"strings"
 )
 
@@ -28,7 +30,7 @@ func ZipFiles(filePaths []string, zipFilePath string) error {
 		// parse and get file name.
 		entryPath := filePath[strings.LastIndex(filePath, string(os.PathSeparator))+1:]
 		// open file.
-		file, err := os.Open(filePath)
+		fileItem, err := os.Open(filePath)
 		if err != nil {
 			return err
 		}
@@ -38,15 +40,57 @@ func ZipFiles(filePaths []string, zipFilePath string) error {
 			return err
 		}
 		// write file to zip entry.
-		if err = transformFileTo(entry, file); err != nil {
+		if err = transformFileTo(entry, fileItem); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func Tar(filePath string) (string, error) {
-	return "", nil
+func ZipDir(dirToZip, zipFilePath string) error {
+	return nil
+}
+
+func TarFiles(filePaths []string, tarFilePath string) error {
+	if filePaths == nil || len(filePaths) == 0 {
+		return nil
+	}
+	e := errors.New("filePath is illegal, denied to process")
+	for _, filePath := range filePaths {
+		if !file.IsSafeFilePath(filePath) {
+			return e
+		}
+	}
+	if !file.IsSafeFilePath(tarFilePath) {
+		return e
+	}
+	tarFile, e := os.Create(tarFilePath)
+	defer func() { _ = tarFile.Close() }()
+	if e != nil {
+		return e
+	}
+	tarWriter := tar.NewWriter(tarFile)
+	for _, filePath := range filePaths {
+		fileItem, e := os.Open(filePath)
+		if e != nil {
+			return e
+		}
+		var fileInfo os.FileInfo
+		if fileInfo, e = os.Stat(filePath); e != nil {
+			return e
+		}
+		var header *tar.Header
+		if header, e = tar.FileInfoHeader(fileInfo, ""); e != nil {
+			return e
+		}
+		if e = tarWriter.WriteHeader(header); e != nil {
+			return e
+		}
+		if e = transformFileTo(tarWriter, fileItem); e != nil {
+			return e
+		}
+	}
+	return nil
 }
 
 func Gzip(filePath string) (string, error) {
