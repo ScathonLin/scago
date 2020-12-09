@@ -3,6 +3,7 @@ package file
 import (
 	"os"
 	"path"
+	"strings"
 )
 
 //ListFiles get all files in the directory specified.
@@ -64,4 +65,8 @@ func DirExists(dirPath string) bool {
 	dirPath = path.Clean(dirPath)
 	lstat, err := os.Lstat(dirPath)
 	return (err == nil || os.IsExist(err)) && lstat.IsDir()
+}
+
+func IsSafeFilePath(filePath string) bool {
+	return strings.Compare(path.Clean(filePath), filePath) == 0
 }
