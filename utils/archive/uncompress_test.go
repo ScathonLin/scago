@@ -9,8 +9,8 @@ import (
 const (
 	testTarGzFile      string = "/Users/scathon/projects/golang/tmp/test.tar.gz"
 	testTarGzUnComPath string = "/Users/scathon/projects/golang/tmp/untargz"
-	testZipFile        string = "/Users/scathon/projects/golang/tmp/test.zip"
-	testZipUnComPath   string = "/Users/scathon/projects/golang/tmp/unzip"
+	testZipFile        string = "/Users/scathon/tmp/test1.zip"
+	testZipUnComPath   string = "/Users/scathon/tmp/unzipdir"
 	testGzipFile       string = "/Users/scathon/projects/golang/tmp/gzip_input.txt.gz"
 	testUnGipFilePath  string = "/Users/scathon/projects/golang/tmp/gunzip.txt"
 )

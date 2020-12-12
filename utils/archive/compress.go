@@ -6,11 +6,13 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"errors"
+	"github.com/klauspost/compress/gzip"
 	"io"
 	"os"
 	"scago/utils/file"
-	"strings"
 )
+
+var filePathIllegalErr = errors.New("filePath is illegal")
 
 func ZipFiles(filePaths []string, zipFilePath string) error {
 	if filePaths == nil || len(filePaths) == 0 {
@@ -25,23 +27,29 @@ func ZipFiles(filePaths []string, zipFilePath string) error {
 	zipWriter := zip.NewWriter(zipFile)
 	defer func() { _ = zipWriter.Close() }()
 	for _, filePath := range filePaths {
-		// parse and get file name.
-		entryPath := filePath[strings.LastIndex(filePath, string(os.PathSeparator))+1:]
 		// open file.
 		fileItem, err := os.Open(filePath)
 		if err != nil {
 			return err
 		}
-		// create entry file handle
-		entry, err := zipWriter.Create(entryPath)
-		if err != nil {
+		var fileInfo os.FileInfo
+		if fileInfo, err = os.Stat(filePath); err != nil {
 			return err
 		}
+		var fileHeader *zip.FileHeader
+		if fileHeader, err = zip.FileInfoHeader(fileInfo); err != nil {
+			return err
+		}
+		zipWriter, err := zipWriter.CreateHeader(fileHeader)
+		if err != nil {
+			return nil
+		}
 		// write file to zip entry.
-		if err = transformFileTo(entry, fileItem); err != nil {
+		if err = transformFileTo(zipWriter, fileItem); err != nil {
 			return err
 		}
 	}
+	_ = zipWriter.Flush()
 	return nil
 }
 
@@ -49,13 +57,13 @@ func ZipDir(dirToZip, zipFilePath string) error {
 	if !file.IsSafeFilePath(dirToZip) || !file.IsSafeFilePath(zipFilePath) {
 		return errors.New("file or dir path params are illegal")
 	}
-	allFiles, e := file.ListFiles(dirToZip, true)
-	if e != nil {
-		return e
+	allFiles, err := file.ListFiles(dirToZip, true)
+	if err != nil {
+		return err
 	}
-	zipFile, e := os.Create(zipFilePath)
+	zipFile, err := os.Create(zipFilePath)
 	defer func() { _ = zipFile.Close() }()
-	if e != nil {
+	if err != nil {
 		return nil
 	}
 	zipWriter := zip.NewWriter(zipFile)
@@ -68,21 +76,20 @@ func ZipDir(dirToZip, zipFilePath string) error {
 		if fileInfo.IsDir() {
 			continue
 		}
-		fileHeader, e := zip.FileInfoHeader(fileInfo)
-		if e != nil {
+		var fileHeader *zip.FileHeader
+		if fileHeader, e = zip.FileInfoHeader(fileInfo); e != nil {
 			return e
 		}
 		fileHeader.Name = fileItem[len(dirToZip)+1:]
-		entryWriter, e := zipWriter.CreateHeader(fileHeader)
-		if e != nil {
+		var entryWriter io.Writer
+		if entryWriter, e = zipWriter.CreateHeader(fileHeader); e != nil {
 			return e
 		}
-		entryFile, e := os.Open(fileItem)
-		if e != nil {
+		var entryFile *os.File
+		if entryFile, e = os.Open(fileItem); e != nil {
 			return e
 		}
-		e = transformFileTo(entryWriter, entryFile)
-		if e != nil {
+		if e = transformFileTo(entryWriter, entryFile); e != nil {
 			return e
 		}
 	}
@@ -93,46 +100,73 @@ func TarFiles(filePaths []string, tarFilePath string) error {
 	if filePaths == nil || len(filePaths) == 0 {
 		return nil
 	}
-	e := errors.New("filePath is illegal, denied to process")
+	err := errors.New("filePath is illegal, denied to process")
 	for _, filePath := range filePaths {
 		if !file.IsSafeFilePath(filePath) {
-			return e
+			return err
 		}
 	}
 	if !file.IsSafeFilePath(tarFilePath) {
-		return e
+		return err
 	}
-	tarFile, e := os.Create(tarFilePath)
+	tarFile, err := os.Create(tarFilePath)
 	defer func() { _ = tarFile.Close() }()
-	if e != nil {
-		return e
+	if err != nil {
+		return err
 	}
 	tarWriter := tar.NewWriter(tarFile)
 	for _, filePath := range filePaths {
-		fileItem, e := os.Open(filePath)
-		if e != nil {
-			return e
+		fileItem, err := os.Open(filePath)
+		if err != nil {
+			return err
 		}
 		var fileInfo os.FileInfo
-		if fileInfo, e = os.Stat(filePath); e != nil {
-			return e
+		if fileInfo, err = os.Stat(filePath); err != nil {
+			return err
 		}
 		var header *tar.Header
-		if header, e = tar.FileInfoHeader(fileInfo, ""); e != nil {
-			return e
+		if header, err = tar.FileInfoHeader(fileInfo, ""); err != nil {
+			return err
 		}
-		if e = tarWriter.WriteHeader(header); e != nil {
-			return e
+		if err = tarWriter.WriteHeader(header); err != nil {
+			return err
 		}
-		if e = transformFileTo(tarWriter, fileItem); e != nil {
-			return e
+		if err = transformFileTo(tarWriter, fileItem); err != nil {
+			return err
 		}
+		_ = tarWriter.Flush()
 	}
 	return nil
 }
 
-func Gzip(filePath string) (string, error) {
-	return "", nil
+func Gzip(filePath, gzipFilePath string) error {
+	if !file.IsSafeFilePath(filePath) {
+		return filePathIllegalErr
+	}
+	var err error
+	fileToGzip, err := os.Open(filePath)
+	defer func() { _ = fileToGzip.Close() }()
+	if err != nil {
+		return err
+	}
+	gzipFile, err := os.Create(gzipFilePath)
+	defer func() { _ = gzipFile.Close() }()
+	if err != nil {
+		return err
+	}
+	gzipWriter := gzip.NewWriter(gzipFile)
+	defer func() { _ = gzipWriter.Close() }()
+	var stat os.FileInfo
+	if stat, err = os.Stat(filePath); err != nil {
+		return err
+	}
+	gzipWriter.Name = stat.Name()
+	gzipWriter.ModTime = stat.ModTime()
+	if err = transformFileTo(gzipWriter, fileToGzip); err != nil {
+		return err
+	}
+	_ = gzipWriter.Flush()
+	return nil
 }
 
 func transformFileTo(writer io.Writer, file *os.File) error {
