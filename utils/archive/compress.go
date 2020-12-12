@@ -14,6 +14,7 @@ import (
 
 var filePathIllegalErr = errors.New("filePath is illegal")
 
+//ZipFiles create zip file for multi files.
 func ZipFiles(filePaths []string, zipFilePath string) error {
 	if filePaths == nil || len(filePaths) == 0 {
 		return errors.New("no file to zip")
@@ -53,6 +54,7 @@ func ZipFiles(filePaths []string, zipFilePath string) error {
 	return nil
 }
 
+//ZipDir create zip file for directory.
 func ZipDir(dirToZip, zipFilePath string) error {
 	if !file.IsSafeFilePath(dirToZip) || !file.IsSafeFilePath(zipFilePath) {
 		return errors.New("file or dir path params are illegal")
@@ -96,6 +98,7 @@ func ZipDir(dirToZip, zipFilePath string) error {
 	return nil
 }
 
+//TarFiles create tar file for multi files.
 func TarFiles(filePaths []string, tarFilePath string) error {
 	if filePaths == nil || len(filePaths) == 0 {
 		return nil
@@ -139,6 +142,7 @@ func TarFiles(filePaths []string, tarFilePath string) error {
 	return nil
 }
 
+//Gzip create gzip file with specified file
 func Gzip(filePath, gzipFilePath string) error {
 	if !file.IsSafeFilePath(filePath) {
 		return filePathIllegalErr
@@ -166,6 +170,52 @@ func Gzip(filePath, gzipFilePath string) error {
 		return err
 	}
 	_ = gzipWriter.Flush()
+	return nil
+}
+
+//TarDir create a tar file for directories.
+func TarDir(dirToTar, tarFilePath string) (err error) {
+	if !file.IsSafeFilePath(dirToTar) && !file.IsSafeFilePath(tarFilePath) {
+		return filePathIllegalErr
+	}
+	var tarFile *os.File
+	if tarFile, err = os.Create(tarFilePath); err != nil {
+		return err
+	}
+	defer func() { _ = tarFile.Close() }()
+	tarWriter := tar.NewWriter(tarFile)
+	defer func() { _ = tarWriter.Close() }()
+	allFiles, err := file.ListFiles(dirToTar, true)
+	if err != nil {
+		return err
+	}
+	for _, fileItem := range allFiles {
+		fileInfo, err := os.Stat(fileItem)
+		if err != nil {
+			return err
+		}
+		fileInfoHeader, err := tar.FileInfoHeader(fileInfo, "")
+		if err != nil {
+			return err
+		}
+		// parse and get relative path.
+		fileInfoHeader.Name = fileItem[len(dirToTar):]
+		// update the file name with relative path so that it can keep the directory structure in the tar file.
+		if err = tarWriter.WriteHeader(fileInfoHeader); err != nil {
+			return err
+		}
+		if fileInfo.IsDir() {
+			continue
+		}
+		itemFileHandle, err := os.Open(fileItem)
+		if err != nil {
+			return err
+		}
+		if err = transformFileTo(tarWriter, itemFileHandle); err != nil {
+			return err
+		}
+	}
+	_ = tarWriter.Flush()
 	return nil
 }
 

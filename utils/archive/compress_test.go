@@ -59,3 +59,14 @@ func TestGzip(t *testing.T) {
 	}
 	fmt.Println("Done!")
 }
+
+func TestTarDir(t *testing.T) {
+	dirToTar := "/Users/scathon/coding/golang/GOPATH/src/scago"
+	tarFilePath := "/Users/scathon/tmp/test2.tar"
+	err := TarDir(dirToTar, tarFilePath)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("Done!")
+}

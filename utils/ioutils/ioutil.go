@@ -22,7 +22,3 @@ func ReadFileToLines(filePath string) ([]string, error) {
 	}
 	return lines, nil
 }
-
-func GetCanonicalPath(path string) string {
-	return ""
-}
