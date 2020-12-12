@@ -4,7 +4,7 @@
 ## 功能列表：
 
 ### 数据结构(collections/***)
- map
++ map
     + 链式map(linkedhashmap: collections/map2/linkedhashmap.go)
 + queue
     + 优先级队列(collections/queue/priority_queue.go)
