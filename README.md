@@ -10,6 +10,8 @@
     + 优先级队列(collections/queue/priority_queue.go)
 + set
     + set(collections/set/set.go)
++ lambda&streaming(collections/stream/stream.go)
+    + 函数式streaming方式处理切片数据，支持Filter,Map,Foreach,Count,Distinct,Collect等基础操作
 
 ### 文件操作(utils/file/fileutil.go)
 + 校验类
