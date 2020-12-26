@@ -121,3 +121,25 @@ func TestStream_Distinct(t *testing.T) {
 		fmt.Println(u)
 	}
 }
+
+func TestStream_CollectToMap(t *testing.T) {
+	type user struct {
+		name string
+		age  int
+	}
+	ages := []interface{}{1, 2, 6, 8, 5, 9, 5}
+	names := []string{"A", "B", "D", "C", "I", "H", "G"}
+	i := -1
+	stream := NewStream(ages)
+	res := stream.Map(func(e interface{}) interface{} {
+		i++
+		return user{names[i], e.(int)}
+	}).CollectToMap(func(e interface{}) interface{} {
+		u := e.(user)
+		return u.name
+	}, func(e interface{}) interface{} {
+		u := e.(user)
+		return u
+	})
+	fmt.Println(res)
+}

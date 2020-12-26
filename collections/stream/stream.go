@@ -4,19 +4,23 @@ package stream
 // author: linhuadong.
 // create: 2020-12-19.
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+)
 
 type Function func(e interface{}) interface{}
 type Consumer func(e interface{})
 type Supply func() interface{}
 type Predicate func(e interface{}) bool
-type BiConsumer func(e1, e2 interface{}) interface{}
+type BiFunction func(e1, e2 interface{}) interface{}
 type Compare func(e1, e2 interface{}) int
 
 type stream struct {
 	head       *stream
 	next       *stream
 	dataset    []interface{}
+	res        interface{}
 	actionFunc func()
 }
 
@@ -42,6 +46,20 @@ func (strm *stream) Map(mapFunc Function) *stream {
 		strm.head.dataset = newDataSet
 	}
 	return nextStream
+}
+
+func (strm *stream) CollectToMap(keyFunc Function, valFunc Function) map[interface{}]interface{} {
+	strm.action()
+	ds := strm.head.dataset
+	res := make(map[interface{}]interface{}, len(ds))
+	for _, e := range ds {
+		key := keyFunc(e)
+		if _, ok := res[key]; ok {
+			panic("duplicate key of: " + fmt.Sprintf("%v", key))
+		}
+		res[key] = valFunc(e)
+	}
+	return res
 }
 
 //Filter elements those match the filter condition
