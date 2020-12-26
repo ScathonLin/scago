@@ -11,7 +11,6 @@ type Set interface {
 	Size() int
 	Add(interface{})
 	Remove(interface{}) interface{}
-	Iterator() common.Iterator
 	ToString() string
 	Contains(interface{}) bool
 	ContainsAll([]interface{}) bool
@@ -69,16 +68,6 @@ func (s *ordinarySet) IsEmpty() bool {
 
 func (s *ordinarySet) Size() int {
 	return len(s.elems)
-}
-
-func (s *ordinarySet) Iterator() common.Iterator {
-	keys := make([]interface{}, len(s.elems))
-	i := 0
-	for k, _ := range s.elems {
-		keys[i] = k
-		i++
-	}
-	return common.NewBaseIterator(len(keys), keys)
 }
 
 func (s *ordinarySet) ContainsAll(elemsToCheck []interface{}) bool {
