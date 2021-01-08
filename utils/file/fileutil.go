@@ -3,6 +3,7 @@ package file
 import (
 	"bufio"
 	"errors"
+	"io"
 	"os"
 	"path"
 	"strings"
@@ -88,4 +89,42 @@ func ReadFileToLines(filePath string) ([]string, error) {
 		lines = append(lines, string(line))
 	}
 	return lines, nil
+}
+func CopyDir(srcDir, dstDir string, createIfNotExists bool) error {
+	if IsDir(srcDir) {
+		dirFile, e := os.Open(srcDir)
+		if e != nil {
+			return e
+		}
+		subFiles, e := dirFile.Readdir(-1)
+		if e != nil {
+			return e
+		}
+		if !DirExists(dstDir) {
+			_ = os.MkdirAll(dstDir, os.ModePerm)
+		}
+		for _, sf := range subFiles {
+			e := CopyDir(path.Join(srcDir, sf.Name()), path.Join(dstDir, sf.Name()), createIfNotExists)
+			if e != nil {
+				panic(e)
+			}
+		}
+	} else {
+		// copy file.
+		reader, e := os.Open(srcDir)
+		defer func() { _ = reader.Close() }()
+		if e != nil {
+			panic(e)
+		}
+		writer, e := os.OpenFile(dstDir, os.O_CREATE|os.O_WRONLY, os.ModePerm)
+		defer func() { _ = writer.Close() }()
+		if e != nil {
+			panic(e)
+		}
+		_, e = io.Copy(writer, reader)
+		if e != nil {
+			panic(e)
+		}
+	}
+	return nil
 }
